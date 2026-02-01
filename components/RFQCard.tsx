@@ -1,7 +1,16 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Spacing, FontSize, BorderRadius } from '../constants';
+import { 
+  Colors, 
+  Spacing, 
+  FontSize, 
+  FontWeight, 
+  BorderRadius,
+  Shadows,
+  getQualityScoreColor,
+} from '../constants';
+import { QualityScoreBadge, StatusBadge, CategoryBadge } from './Badge';
 import type { RFQ } from '../types';
 
 interface RFQCardProps {
@@ -19,14 +28,29 @@ export function RFQCard({ rfq, onPress, locale = 'vi' }: RFQCardProps) {
     ? rfq.productCategory?.nameVi
     : rfq.productCategory?.nameEn;
 
-  const formatDate = (dateStr: string) => {
+  const formatTimeAgo = (dateStr: string) => {
+    const now = new Date();
     const date = new Date(dateStr);
-    return date.toLocaleDateString(locale === 'vi' ? 'vi-VN' : 'en-US', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    });
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (locale === 'vi') {
+      if (diffMins < 60) return `${diffMins} phút trước`;
+      if (diffHours < 24) return `${diffHours} giờ trước`;
+      if (diffDays < 7) return `${diffDays} ngày trước`;
+      return date.toLocaleDateString('vi-VN');
+    } else {
+      if (diffMins < 60) return `${diffMins}m ago`;
+      if (diffHours < 24) return `${diffHours}h ago`;
+      if (diffDays < 7) return `${diffDays}d ago`;
+      return date.toLocaleDateString('en-US');
+    }
   };
+
+  const isNew = new Date().getTime() - new Date(rfq.createdAt).getTime() < 24 * 60 * 60 * 1000;
+  const isHot = rfq.qualityScore && rfq.qualityScore >= 80;
 
   return (
     <TouchableOpacity
@@ -34,45 +58,54 @@ export function RFQCard({ rfq, onPress, locale = 'vi' }: RFQCardProps) {
       onPress={onPress}
       activeOpacity={0.7}
     >
+      {/* Header: Category + Badges */}
       <View style={styles.header}>
-        {category && (
-          <View style={styles.categoryBadge}>
-            <Text style={styles.categoryText}>{category}</Text>
-          </View>
-        )}
-        {rfq.isFeatured && (
-          <View style={styles.featuredBadge}>
-            <Ionicons name="star" size={12} color="#fff" />
-          </View>
+        <View style={styles.badgesRow}>
+          {category && <CategoryBadge name={category} />}
+          {isHot && <StatusBadge type="hot" />}
+          {isNew && !isHot && <StatusBadge type="new" />}
+          {rfq.isFeatured && <StatusBadge type="verified" />}
+        </View>
+        {rfq.qualityScore && (
+          <QualityScoreBadge score={rfq.qualityScore} size="sm" />
         )}
       </View>
 
+      {/* Title */}
       <Text style={styles.title} numberOfLines={2}>
         {title}
       </Text>
 
-      <View style={styles.details}>
-        <View style={styles.detailRow}>
-          <Ionicons name="cube-outline" size={16} color={Colors.light.textSecondary} />
+      {/* Details Row */}
+      <View style={styles.detailsRow}>
+        <View style={styles.detailItem}>
           <Text style={styles.detailText}>
-            {rfq.quantity} {rfq.quantityUnit}
+            🌍 {rfq.buyerCountry}
           </Text>
         </View>
-
-        <View style={styles.detailRow}>
-          <Ionicons name="location-outline" size={16} color={Colors.light.textSecondary} />
-          <Text style={styles.detailText}>{rfq.buyerCountry}</Text>
+        <View style={styles.detailItem}>
+          <Text style={styles.detailText}>
+            📦 {rfq.quantity} {rfq.quantityUnit}
+          </Text>
         </View>
-
-        <View style={styles.detailRow}>
-          <Ionicons name="boat-outline" size={16} color={Colors.light.textSecondary} />
-          <Text style={styles.detailText}>{rfq.incoterms}</Text>
+        <View style={styles.detailItem}>
+          <Text style={styles.detailText}>
+            🚢 {rfq.incoterms}
+          </Text>
         </View>
       </View>
 
+      {/* Footer */}
       <View style={styles.footer}>
-        <Text style={styles.date}>{formatDate(rfq.createdAt)}</Text>
-        <Ionicons name="chevron-forward" size={20} color={Colors.light.textMuted} />
+        <View style={styles.lockInfo}>
+          <Ionicons name="lock-closed" size={14} color={Colors.slate[400]} />
+          <Text style={styles.lockText}>
+            {locale === 'vi' ? 'Thông tin liên hệ' : 'Contact info'}
+          </Text>
+        </View>
+        <Text style={styles.timeAgo}>
+          ⏱️ {formatTimeAgo(rfq.createdAt)}
+        </Text>
       </View>
     </TouchableOpacity>
   );
@@ -80,70 +113,66 @@ export function RFQCard({ rfq, onPress, locale = 'vi' }: RFQCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.light.surface,
+    backgroundColor: Colors.white,
     borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
+    padding: Spacing.lg,
     marginBottom: Spacing.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: Colors.slate[200],
+    ...Shadows.sm,
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.sm,
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: Spacing.md,
   },
-  categoryBadge: {
-    backgroundColor: Colors.light.primary + '15',
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.sm,
-    marginRight: Spacing.sm,
-  },
-  categoryText: {
-    fontSize: FontSize.xs,
-    color: Colors.light.primary,
-    fontWeight: '500',
-  },
-  featuredBadge: {
-    backgroundColor: Colors.light.warning,
-    padding: Spacing.xs,
-    borderRadius: BorderRadius.full,
+  badgesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+    flex: 1,
   },
   title: {
-    fontSize: FontSize.lg,
-    fontWeight: '600',
-    color: Colors.light.text,
-    marginBottom: Spacing.sm,
+    fontSize: FontSize.h3,
+    fontWeight: FontWeight.semiBold,
+    color: Colors.slate[800],
+    marginBottom: Spacing.md,
     lineHeight: 24,
   },
-  details: {
+  detailsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.md,
     marginBottom: Spacing.md,
   },
-  detailRow: {
+  detailItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.xs,
   },
   detailText: {
-    fontSize: FontSize.sm,
-    color: Colors.light.textSecondary,
+    fontSize: FontSize.body,
+    color: Colors.slate[500],
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingTop: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: Colors.light.border,
-    paddingTop: Spacing.sm,
+    borderTopColor: Colors.slate[100],
   },
-  date: {
-    fontSize: FontSize.xs,
-    color: Colors.light.textMuted,
+  lockInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  lockText: {
+    fontSize: FontSize.body,
+    color: Colors.slate[400],
+  },
+  timeAgo: {
+    fontSize: FontSize.caption,
+    color: Colors.slate[400],
   },
 });

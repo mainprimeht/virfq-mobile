@@ -1,145 +1,134 @@
-// User types
+// User Types
 export interface User {
   id: string;
   email: string;
-  name: string | null;
-  company: string | null;
-  phone: string | null;
-  whatsapp: string | null;
-  country: string | null;
-  role: 'user' | 'admin';
-  trialInfo?: {
-    isInTrial: boolean;
-    trialDaysRemaining: number;
-    emailVerified: boolean;
-  };
-  subscription?: {
-    planId: string;
-    planName: string;
-    expiresAt: string;
-  };
+  name?: string;
+  company?: string;
+  phone?: string;
+  whatsapp?: string;
+  country?: string;
+  role?: string;
+  createdAt: string;
+  updatedAt?: string;
+  subscription?: Subscription;
+  trialInfo?: TrialInfo;
 }
 
-// RFQ types
-export interface ProductCategory {
-  id: string;
-  nameVi: string;
-  nameEn: string;
-  slug: string;
-  sortOrder: number;
-  isActive: boolean;
+export interface Subscription {
+  planId: string;
+  planName: string;
+  status: 'active' | 'expired' | 'cancelled';
+  expiresAt?: string;
+  dailyLimit?: number;
+  usedToday?: number;
 }
 
-export interface TranslationVi {
-  titleVi: string;
-  descriptionVi: string;
+export interface TrialInfo {
+  isInTrial: boolean;
+  trialEndsAt?: string;
+  trialDaysRemaining?: number;
 }
 
+// RFQ Types
 export interface RFQ {
   id: string;
-  slug: string;
   titleEn: string;
-  descriptionEn: string;
-  translationVi: TranslationVi | null;
-  translationStatus: 'pending' | 'translated' | 'failed';
-  productCategory: ProductCategory | null;
-  quantity: number;
-  quantityUnit: string;
+  descriptionEn?: string;
+  productCategory?: ProductCategory;
   buyerCountry: string;
+  buyerCountryCode?: string;
+  quantity: string;
+  quantityUnit?: string;
   incoterms: string;
-  targetPrice: number | null;
-  shippingPort: string | null;
+  qualityScore?: number;
+  isFeatured?: boolean;
+  isEarlyAccess?: boolean;
   createdAt: string;
-  isFeatured: boolean;
-  qualityScore: number | null;
+  updatedAt?: string;
+  translationVi?: RFQTranslation;
 }
 
-export interface RFQDetail extends RFQ {
-  title: string;
-  productDescription: string;
-  buyerEmail: string | null;
-  buyerPhone: string | null;
-  buyerWhatsapp: string | null;
-  buyerCompany: string | null;
+export interface RFQTranslation {
+  titleVi?: string;
+  descriptionVi?: string;
 }
 
-export interface RFQAccess {
-  canView: boolean;
-  contactLevel: 'none' | 'email_only' | 'email_phone' | 'full';
-  maskedFields?: string[];
-  upgradeRequired?: boolean;
-  quotaInfo?: {
-    used: number;
-    limit: number;
-    remaining: number;
-  };
-  reason?: string;
+export interface ProductCategory {
+  id: string;
+  nameEn: string;
+  nameVi?: string;
+  slug?: string;
 }
 
-export interface UnlockResult {
+export interface UnlockedContact {
+  name?: string;
+  company?: string;
+  email?: string;
+  phone?: string;
+  whatsapp?: string;
+}
+
+// API Response Types
+export interface ApiResponse<T> {
   success: boolean;
-  rfqId: string;
-  contactLevel: string;
-  contact: {
-    email: string;
-    phone: string | null;
-    whatsapp: string | null;
-    name: string | null;
-    company: string | null;
-  };
-  trialInfo?: {
-    used: number;
-    limit: number;
-    remaining: number;
-    daysLeft: number;
-    isReopen: boolean;
-  };
+  data?: T;
+  message?: string;
+  error?: string;
 }
 
-// API Response types
 export interface PaginatedResponse<T> {
+  success: boolean;
   data: T[];
   pagination: {
     page: number;
     limit: number;
-    hasNextPage: boolean;
+    total: number;
+    totalPages: number;
+    hasMore: boolean;
   };
 }
 
-export interface RFQListResponse {
-  rfqs: RFQ[];
-  pagination: {
-    page: number;
-    limit: number;
-    hasNextPage: boolean;
-  };
-  userContactLevel: string;
-}
-
-export interface RFQFilters {
-  categories: ProductCategory[];
-  countries: string[];
-  incoterms: string[];
-}
-
-// Auth types
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-export interface RegisterRequest {
-  name?: string;
-  email: string;
-  password: string;
-  company?: string;
-  country?: string;
-  phone?: string;
-  locale?: string;
-}
-
-export interface AuthResponse {
-  success: boolean;
+// Auth Types
+export interface LoginResponse {
+  accessToken: string;
+  refreshToken?: string;
   user: User;
-  message?: string;
+}
+
+export interface RegisterResponse {
+  message: string;
+  email: string;
+}
+
+// Plan Types
+export interface Plan {
+  id: string;
+  name: string;
+  price: number;
+  currency: string;
+  interval: 'monthly' | 'yearly';
+  features: string[];
+  dailyLimit: number;
+  canViewEmail: boolean;
+  canViewPhone: boolean;
+  canExportCsv: boolean;
+}
+
+// Filter Types
+export interface RFQFilters {
+  search?: string;
+  categories?: string[];
+  countries?: string[];
+  incoterms?: string[];
+  page?: number;
+  limit?: number;
+}
+
+// Profile Update
+export interface ProfileUpdate {
+  name?: string;
+  company?: string;
+  phone?: string;
+  whatsapp?: string;
+  country?: string;
 }

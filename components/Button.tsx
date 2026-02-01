@@ -7,17 +7,19 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius } from '../constants';
+import { Colors, Spacing, FontSize, FontWeight, BorderRadius, Shadows } from '../constants';
 
 interface ButtonProps {
   title: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
+  variant?: 'primary' | 'cta' | 'secondary' | 'outline' | 'ghost' | 'danger';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
   disabled?: boolean;
+  icon?: React.ReactNode;
   style?: ViewStyle;
   textStyle?: TextStyle;
+  fullWidth?: boolean;
 }
 
 export function Button({
@@ -27,24 +29,96 @@ export function Button({
   size = 'md',
   loading = false,
   disabled = false,
+  icon,
   style,
   textStyle,
+  fullWidth = true,
 }: ButtonProps) {
   const isDisabled = disabled || loading;
 
+  const getBackgroundColor = () => {
+    if (isDisabled) return Colors.slate[300];
+    switch (variant) {
+      case 'primary':
+        return Colors.primary[600];
+      case 'cta':
+        return Colors.cta.DEFAULT;
+      case 'secondary':
+        return Colors.slate[100];
+      case 'outline':
+      case 'ghost':
+        return 'transparent';
+      case 'danger':
+        return Colors.error[600];
+      default:
+        return Colors.primary[600];
+    }
+  };
+
+  const getTextColor = () => {
+    if (isDisabled && (variant === 'outline' || variant === 'ghost')) {
+      return Colors.slate[400];
+    }
+    switch (variant) {
+      case 'primary':
+      case 'cta':
+      case 'danger':
+        return Colors.white;
+      case 'secondary':
+        return Colors.slate[700];
+      case 'outline':
+        return Colors.primary[600];
+      case 'ghost':
+        return Colors.primary[600];
+      default:
+        return Colors.white;
+    }
+  };
+
+  const getBorderStyle = () => {
+    if (variant === 'outline') {
+      return {
+        borderWidth: 1,
+        borderColor: isDisabled ? Colors.slate[300] : Colors.primary[600],
+      };
+    }
+    if (variant === 'secondary') {
+      return {
+        borderWidth: 1,
+        borderColor: Colors.slate[200],
+      };
+    }
+    return {};
+  };
+
+  const getShadow = () => {
+    if (isDisabled || variant === 'ghost' || variant === 'outline') {
+      return {};
+    }
+    if (variant === 'cta') {
+      return {
+        ...Shadows.lg,
+        shadowColor: Colors.cta.DEFAULT,
+        shadowOpacity: 0.3,
+      };
+    }
+    return Shadows.md;
+  };
+
   const buttonStyles = [
     styles.base,
-    styles[variant],
     styles[`size_${size}`],
-    isDisabled && styles.disabled,
+    { backgroundColor: getBackgroundColor() },
+    getBorderStyle(),
+    getShadow(),
+    fullWidth && styles.fullWidth,
     style,
   ];
 
   const textStyles = [
     styles.text,
-    styles[`text_${variant}`],
     styles[`text_${size}`],
-    isDisabled && styles.textDisabled,
+    { color: getTextColor() },
     textStyle,
   ];
 
@@ -53,15 +127,18 @@ export function Button({
       style={buttonStyles}
       onPress={onPress}
       disabled={isDisabled}
-      activeOpacity={0.7}
+      activeOpacity={0.8}
     >
       {loading ? (
         <ActivityIndicator
-          color={variant === 'primary' ? '#fff' : Colors.light.primary}
+          color={getTextColor()}
           size="small"
         />
       ) : (
-        <Text style={textStyles}>{title}</Text>
+        <>
+          {icon}
+          <Text style={textStyles}>{title}</Text>
+        </>
       )}
     </TouchableOpacity>
   );
@@ -72,23 +149,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.lg,
+    gap: Spacing.sm,
   },
-  
-  // Variants
-  primary: {
-    backgroundColor: Colors.light.primary,
-  },
-  secondary: {
-    backgroundColor: Colors.light.secondary,
-  },
-  outline: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: Colors.light.primary,
-  },
-  ghost: {
-    backgroundColor: 'transparent',
+  fullWidth: {
+    width: '100%',
   },
   
   // Sizes
@@ -98,44 +163,24 @@ const styles = StyleSheet.create({
   },
   size_md: {
     paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Spacing.xl,
   },
   size_lg: {
     paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing.xl,
-  },
-  
-  // Disabled
-  disabled: {
-    opacity: 0.5,
+    paddingHorizontal: Spacing['2xl'],
   },
   
   // Text
   text: {
-    fontWeight: '600',
-  },
-  text_primary: {
-    color: '#fff',
-  },
-  text_secondary: {
-    color: '#fff',
-  },
-  text_outline: {
-    color: Colors.light.primary,
-  },
-  text_ghost: {
-    color: Colors.light.primary,
+    fontWeight: FontWeight.semiBold,
   },
   text_sm: {
-    fontSize: FontSize.sm,
+    fontSize: FontSize.body,
   },
   text_md: {
-    fontSize: FontSize.md,
+    fontSize: FontSize.bodyLarge,
   },
   text_lg: {
-    fontSize: FontSize.lg,
-  },
-  textDisabled: {
-    opacity: 0.7,
+    fontSize: FontSize.h3,
   },
 });

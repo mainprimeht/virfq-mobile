@@ -1,103 +1,153 @@
-export const vi = {
-  // Common
-  common: {
+export const translations = {
+  vi: {
+    // Common
+    app_name: 'ViRFQ',
     loading: 'Đang tải...',
-    error: 'Có lỗi xảy ra',
-    retry: 'Thử lại',
+    error: 'Lỗi',
+    success: 'Thành công',
     cancel: 'Hủy',
     save: 'Lưu',
     delete: 'Xóa',
     edit: 'Sửa',
     back: 'Quay lại',
-    next: 'Tiếp theo',
+    next: 'Tiếp',
     done: 'Xong',
+    close: 'Đóng',
     search: 'Tìm kiếm',
-    filter: 'Lọc',
-    clear: 'Xóa',
-    all: 'Tất cả',
-  },
-  
-  // Auth
-  auth: {
+    filter: 'Bộ lọc',
+    apply: 'Áp dụng',
+    reset: 'Đặt lại',
+    copy: 'Sao chép',
+    share: 'Chia sẻ',
+    
+    // Auth
     login: 'Đăng nhập',
-    logout: 'Đăng xuất',
     register: 'Đăng ký',
+    logout: 'Đăng xuất',
     email: 'Email',
     password: 'Mật khẩu',
-    confirmPassword: 'Xác nhận mật khẩu',
-    name: 'Họ tên',
-    company: 'Công ty',
-    phone: 'Số điện thoại',
-    forgotPassword: 'Quên mật khẩu?',
-    noAccount: 'Chưa có tài khoản?',
-    hasAccount: 'Đã có tài khoản?',
-    registerNow: 'Đăng ký ngay',
-    loginNow: 'Đăng nhập ngay',
-    verifyEmail: 'Xác thực email',
-    enterOTP: 'Nhập mã xác thực',
-    otpSent: 'Mã xác thực đã được gửi đến email của bạn',
-    resendOTP: 'Gửi lại mã',
-    invalidCredentials: 'Email hoặc mật khẩu không đúng',
+    confirm_password: 'Xác nhận mật khẩu',
+    forgot_password: 'Quên mật khẩu?',
+    create_account: 'Tạo tài khoản',
+    already_have_account: 'Đã có tài khoản?',
+    dont_have_account: 'Chưa có tài khoản?',
+    verify_email: 'Xác thực email',
+    verify_otp: 'Xác thực OTP',
+    resend_otp: 'Gửi lại mã',
+    reset_password: 'Đặt lại mật khẩu',
+    change_password: 'Đổi mật khẩu',
+    
+    // Tabs
+    tab_feed: 'Bảng tin',
+    tab_dashboard: 'Dashboard',
+    tab_menu: 'Menu',
+    
+    // RFQ
+    rfq_list: 'Bảng tin RFQ',
+    rfq_detail: 'Chi tiết RFQ',
+    rfq_search_placeholder: 'Tìm kiếm sản phẩm...',
+    rfq_no_results: 'Không có RFQ nào',
+    rfq_unlock: 'Mở khóa',
+    rfq_unlock_remaining: 'Còn {count} lượt mở khóa hôm nay',
+    rfq_contact_info: 'Thông tin liên hệ',
+    rfq_contact_locked: 'Mở khóa để xem chi tiết buyer',
+    rfq_quantity: 'Số lượng',
+    rfq_country: 'Quốc gia',
+    rfq_incoterm: 'Điều kiện giao hàng',
+    rfq_posted: 'Đăng lúc',
+    rfq_description: 'Mô tả chi tiết',
+    rfq_summary_vi: 'Tóm tắt tiếng Việt',
+    rfq_quality_score: 'Điểm chất lượng',
+    
+    // Filters
+    filter_category: 'Danh mục sản phẩm',
+    filter_country: 'Quốc gia người mua',
+    filter_incoterm: 'Điều kiện giao hàng',
+    filter_clear: 'Xóa bộ lọc',
+    
+    // Dashboard
+    dashboard_greeting: 'Xin chào, {name}',
+    dashboard_plan: 'Gói: {plan}',
+    dashboard_trial: 'Dùng thử: còn {days} ngày',
+    dashboard_upgrade: 'Nâng cấp gói',
+    dashboard_usage: 'Sử dụng hôm nay',
+    dashboard_unlocked: 'Đã mở khóa {count} RFQ',
+    dashboard_access: 'Quyền truy cập',
+    dashboard_recent: 'RFQ đã xem gần đây',
+    
+    // Profile
+    profile: 'Hồ sơ cá nhân',
+    profile_name: 'Họ và tên',
+    profile_company: 'Tên công ty',
+    profile_phone: 'Số điện thoại',
+    profile_whatsapp: 'WhatsApp',
+    profile_country: 'Quốc gia',
+    profile_updated: 'Hồ sơ đã được cập nhật',
+    
+    // Menu
+    menu_account: 'Tài khoản',
+    menu_profile: 'Hồ sơ cá nhân',
+    menu_change_password: 'Đổi mật khẩu',
+    menu_team: 'Quản lý team',
+    menu_payment_history: 'Lịch sử thanh toán',
+    menu_subscription: 'Gói dịch vụ',
+    menu_pricing: 'Bảng giá',
+    menu_coupon: 'Nhập mã giảm giá',
+    menu_support: 'Hỗ trợ',
+    menu_contact: 'Liên hệ',
+    menu_faq: 'FAQ',
+    menu_terms: 'Điều khoản sử dụng',
+    
+    // Pricing
+    pricing_title: 'Bảng giá',
+    pricing_choose: 'Chọn gói phù hợp với bạn',
+    pricing_month: 'tháng',
+    pricing_free: 'Miễn phí',
+    pricing_current: 'Gói hiện tại',
+    pricing_select: 'Chọn gói này',
+    pricing_popular: 'PHỔ BIẾN',
+    
+    // Checkout
+    checkout_title: 'Thanh toán',
+    checkout_order: 'Đơn hàng',
+    checkout_original: 'Giá gốc',
+    checkout_discount: 'Giảm giá',
+    checkout_total: 'Tổng thanh toán',
+    checkout_coupon: 'Mã giảm giá',
+    checkout_coupon_apply: 'Áp dụng',
+    checkout_coupon_applied: 'Mã giảm giá đã được áp dụng',
+    checkout_bank_transfer: 'Chuyển khoản ngân hàng',
+    checkout_bank_name: 'Ngân hàng',
+    checkout_account_number: 'Số tài khoản',
+    checkout_account_name: 'Chủ tài khoản',
+    checkout_content: 'Nội dung CK',
+    checkout_expires: 'Hết hạn sau',
+    checkout_copy_content: 'Copy nội dung chuyển khoản',
+    checkout_note: 'Sau khi chuyển khoản, hệ thống sẽ tự động kích hoạt gói trong vài phút.',
+    
+    // Time
+    time_just_now: 'Vừa xong',
+    time_minutes_ago: '{count} phút trước',
+    time_hours_ago: '{count} giờ trước',
+    time_days_ago: '{count} ngày trước',
+    
+    // Errors
+    error_network: 'Không có kết nối mạng',
+    error_server: 'Lỗi máy chủ',
+    error_invalid_email: 'Email không hợp lệ',
+    error_password_short: 'Mật khẩu phải có ít nhất 6 ký tự',
+    error_password_mismatch: 'Mật khẩu xác nhận không khớp',
+    error_required: 'Vui lòng nhập {field}',
+    error_otp_invalid: 'Mã OTP không chính xác',
+    error_login_failed: 'Đăng nhập thất bại',
   },
   
-  // RFQ
-  rfq: {
-    title: 'Yêu cầu báo giá',
-    list: 'Danh sách RFQ',
-    detail: 'Chi tiết RFQ',
-    quantity: 'Số lượng',
-    targetPrice: 'Giá mục tiêu',
-    incoterms: 'Điều kiện giao hàng',
-    buyerCountry: 'Quốc gia người mua',
-    shippingPort: 'Cảng giao hàng',
-    createdAt: 'Ngày tạo',
-    category: 'Danh mục',
-    unlock: 'Mở khóa thông tin',
-    unlocked: 'Đã mở khóa',
-    contact: 'Thông tin liên hệ',
-    buyerEmail: 'Email người mua',
-    buyerPhone: 'SĐT người mua',
-    buyerWhatsapp: 'WhatsApp',
-    buyerCompany: 'Công ty người mua',
-    trialRemaining: 'Còn lại {{count}} lượt dùng thử',
-    noResults: 'Không tìm thấy RFQ nào',
-    loadMore: 'Tải thêm',
-  },
-  
-  // Profile
-  profile: {
-    title: 'Hồ sơ',
-    subscription: 'Gói đăng ký',
-    freePlan: 'Gói miễn phí',
-    upgradePlan: 'Nâng cấp gói',
-    changePassword: 'Đổi mật khẩu',
-    currentPassword: 'Mật khẩu hiện tại',
-    newPassword: 'Mật khẩu mới',
-  },
-  
-  // Settings
-  settings: {
-    title: 'Cài đặt',
-    language: 'Ngôn ngữ',
-    notifications: 'Thông báo',
-    about: 'Về ViRFQ',
-    version: 'Phiên bản',
-  },
-  
-  // Tabs
-  tabs: {
-    home: 'Trang chủ',
-    profile: 'Hồ sơ',
-    settings: 'Cài đặt',
-  },
-};
-
-export const en = {
-  // Common
-  common: {
+  en: {
+    // Common
+    app_name: 'ViRFQ',
     loading: 'Loading...',
-    error: 'An error occurred',
-    retry: 'Retry',
+    error: 'Error',
+    success: 'Success',
     cancel: 'Cancel',
     save: 'Save',
     delete: 'Delete',
@@ -105,85 +155,136 @@ export const en = {
     back: 'Back',
     next: 'Next',
     done: 'Done',
+    close: 'Close',
     search: 'Search',
     filter: 'Filter',
-    clear: 'Clear',
-    all: 'All',
-  },
-  
-  // Auth
-  auth: {
+    apply: 'Apply',
+    reset: 'Reset',
+    copy: 'Copy',
+    share: 'Share',
+    
+    // Auth
     login: 'Login',
-    logout: 'Logout',
     register: 'Register',
+    logout: 'Logout',
     email: 'Email',
     password: 'Password',
-    confirmPassword: 'Confirm Password',
-    name: 'Full Name',
-    company: 'Company',
-    phone: 'Phone Number',
-    forgotPassword: 'Forgot Password?',
-    noAccount: "Don't have an account?",
-    hasAccount: 'Already have an account?',
-    registerNow: 'Register Now',
-    loginNow: 'Login Now',
-    verifyEmail: 'Verify Email',
-    enterOTP: 'Enter verification code',
-    otpSent: 'Verification code has been sent to your email',
-    resendOTP: 'Resend Code',
-    invalidCredentials: 'Invalid email or password',
-  },
-  
-  // RFQ
-  rfq: {
-    title: 'Request for Quotation',
-    list: 'RFQ List',
-    detail: 'RFQ Detail',
-    quantity: 'Quantity',
-    targetPrice: 'Target Price',
-    incoterms: 'Incoterms',
-    buyerCountry: 'Buyer Country',
-    shippingPort: 'Shipping Port',
-    createdAt: 'Created At',
-    category: 'Category',
-    unlock: 'Unlock Contact',
-    unlocked: 'Unlocked',
-    contact: 'Contact Information',
-    buyerEmail: 'Buyer Email',
-    buyerPhone: 'Buyer Phone',
-    buyerWhatsapp: 'WhatsApp',
-    buyerCompany: 'Buyer Company',
-    trialRemaining: '{{count}} trial unlocks remaining',
-    noResults: 'No RFQs found',
-    loadMore: 'Load More',
-  },
-  
-  // Profile
-  profile: {
-    title: 'Profile',
-    subscription: 'Subscription',
-    freePlan: 'Free Plan',
-    upgradePlan: 'Upgrade Plan',
-    changePassword: 'Change Password',
-    currentPassword: 'Current Password',
-    newPassword: 'New Password',
-  },
-  
-  // Settings
-  settings: {
-    title: 'Settings',
-    language: 'Language',
-    notifications: 'Notifications',
-    about: 'About ViRFQ',
-    version: 'Version',
-  },
-  
-  // Tabs
-  tabs: {
-    home: 'Home',
+    confirm_password: 'Confirm Password',
+    forgot_password: 'Forgot password?',
+    create_account: 'Create Account',
+    already_have_account: 'Already have an account?',
+    dont_have_account: "Don't have an account?",
+    verify_email: 'Verify Email',
+    verify_otp: 'Verify OTP',
+    resend_otp: 'Resend Code',
+    reset_password: 'Reset Password',
+    change_password: 'Change Password',
+    
+    // Tabs
+    tab_feed: 'Feed',
+    tab_dashboard: 'Dashboard',
+    tab_menu: 'Menu',
+    
+    // RFQ
+    rfq_list: 'RFQ Feed',
+    rfq_detail: 'RFQ Detail',
+    rfq_search_placeholder: 'Search products...',
+    rfq_no_results: 'No RFQs found',
+    rfq_unlock: 'Unlock',
+    rfq_unlock_remaining: '{count} unlocks remaining today',
+    rfq_contact_info: 'Contact Info',
+    rfq_contact_locked: 'Unlock to view buyer details',
+    rfq_quantity: 'Quantity',
+    rfq_country: 'Country',
+    rfq_incoterm: 'Incoterm',
+    rfq_posted: 'Posted',
+    rfq_description: 'Description',
+    rfq_summary_vi: 'Vietnamese Summary',
+    rfq_quality_score: 'Quality Score',
+    
+    // Filters
+    filter_category: 'Product Category',
+    filter_country: 'Buyer Country',
+    filter_incoterm: 'Incoterm',
+    filter_clear: 'Clear filters',
+    
+    // Dashboard
+    dashboard_greeting: 'Hello, {name}',
+    dashboard_plan: 'Plan: {plan}',
+    dashboard_trial: 'Trial: {days} days left',
+    dashboard_upgrade: 'Upgrade Plan',
+    dashboard_usage: 'Usage Today',
+    dashboard_unlocked: 'Unlocked {count} RFQs',
+    dashboard_access: 'Access Level',
+    dashboard_recent: 'Recently Viewed',
+    
+    // Profile
     profile: 'Profile',
-    settings: 'Settings',
+    profile_name: 'Full Name',
+    profile_company: 'Company Name',
+    profile_phone: 'Phone Number',
+    profile_whatsapp: 'WhatsApp',
+    profile_country: 'Country',
+    profile_updated: 'Profile updated',
+    
+    // Menu
+    menu_account: 'Account',
+    menu_profile: 'Profile',
+    menu_change_password: 'Change Password',
+    menu_team: 'Team Management',
+    menu_payment_history: 'Payment History',
+    menu_subscription: 'Subscription',
+    menu_pricing: 'Pricing',
+    menu_coupon: 'Enter Coupon',
+    menu_support: 'Support',
+    menu_contact: 'Contact',
+    menu_faq: 'FAQ',
+    menu_terms: 'Terms of Service',
+    
+    // Pricing
+    pricing_title: 'Pricing',
+    pricing_choose: 'Choose a plan that fits you',
+    pricing_month: 'month',
+    pricing_free: 'Free',
+    pricing_current: 'Current Plan',
+    pricing_select: 'Select Plan',
+    pricing_popular: 'POPULAR',
+    
+    // Checkout
+    checkout_title: 'Checkout',
+    checkout_order: 'Order',
+    checkout_original: 'Original Price',
+    checkout_discount: 'Discount',
+    checkout_total: 'Total',
+    checkout_coupon: 'Coupon Code',
+    checkout_coupon_apply: 'Apply',
+    checkout_coupon_applied: 'Coupon applied',
+    checkout_bank_transfer: 'Bank Transfer',
+    checkout_bank_name: 'Bank',
+    checkout_account_number: 'Account Number',
+    checkout_account_name: 'Account Name',
+    checkout_content: 'Transfer Content',
+    checkout_expires: 'Expires in',
+    checkout_copy_content: 'Copy transfer content',
+    checkout_note: 'After transfer, your plan will be activated within minutes.',
+    
+    // Time
+    time_just_now: 'Just now',
+    time_minutes_ago: '{count}m ago',
+    time_hours_ago: '{count}h ago',
+    time_days_ago: '{count}d ago',
+    
+    // Errors
+    error_network: 'No internet connection',
+    error_server: 'Server error',
+    error_invalid_email: 'Invalid email',
+    error_password_short: 'Password must be at least 6 characters',
+    error_password_mismatch: 'Passwords do not match',
+    error_required: 'Please enter {field}',
+    error_otp_invalid: 'Invalid OTP',
+    error_login_failed: 'Login failed',
   },
 };
 
-export type Translations = typeof vi;
+export type TranslationKey = keyof typeof translations.vi;
+export type Locale = 'vi' | 'en';

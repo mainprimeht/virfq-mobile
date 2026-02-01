@@ -1,54 +1,64 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants';
+import { Colors, FontSize, FontWeight } from '../../constants';
 
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors.light.primary,
-        tabBarInactiveTintColor: Colors.light.textMuted,
+        tabBarActiveTintColor: Colors.primary[600],
+        tabBarInactiveTintColor: Colors.slate[400],
         headerShown: true,
         tabBarStyle: {
-          backgroundColor: Colors.light.surface,
-          borderTopColor: Colors.light.border,
+          backgroundColor: Colors.white,
+          borderTopColor: Colors.slate[200],
+          borderTopWidth: 1,
+          paddingTop: 8,
+          paddingBottom: 8,
+          height: 60,
+        },
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: FontWeight.medium,
         },
         headerStyle: {
-          backgroundColor: Colors.light.surface,
+          backgroundColor: Colors.white,
         },
         headerTitleStyle: {
-          color: Colors.light.text,
-          fontWeight: '600',
+          color: Colors.slate[900],
+          fontWeight: FontWeight.semiBold,
+          fontSize: FontSize.h3,
         },
+        headerShadowVisible: false,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'RFQ',
-          tabBarLabel: 'Trang chủ',
+          title: 'Bảng tin RFQ',
+          tabBarLabel: 'Bảng tin',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home-outline" size={size} color={color} />
+            <Ionicons name="newspaper-outline" size={24} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="dashboard"
         options={{
-          title: 'Hồ sơ',
-          tabBarLabel: 'Hồ sơ',
+          title: 'Dashboard',
+          tabBarLabel: 'Dashboard',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
+            <Ionicons name="grid-outline" size={24} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="settings"
+        name="menu"
         options={{
-          title: 'Cài đặt',
-          tabBarLabel: 'Cài đặt',
+          title: 'Menu',
+          tabBarLabel: 'Menu',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="settings-outline" size={size} color={color} />
+            <Ionicons name="menu-outline" size={24} color={color} />
           ),
         }}
       />

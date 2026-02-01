@@ -1,17 +1,17 @@
 import React from 'react';
 import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
-import { Colors, Spacing, FontSize } from '../constants';
+import { Colors, FontSize, Spacing } from '../constants';
 
 interface LoadingProps {
   text?: string;
   fullScreen?: boolean;
 }
 
-export function Loading({ text, fullScreen = false }: LoadingProps) {
+export function Loading({ text, fullScreen = true }: LoadingProps) {
   if (fullScreen) {
     return (
       <View style={styles.fullScreen}>
-        <ActivityIndicator size="large" color={Colors.light.primary} />
+        <ActivityIndicator size="large" color={Colors.primary[600]} />
         {text && <Text style={styles.text}>{text}</Text>}
       </View>
     );
@@ -19,8 +19,8 @@ export function Loading({ text, fullScreen = false }: LoadingProps) {
 
   return (
     <View style={styles.inline}>
-      <ActivityIndicator size="small" color={Colors.light.primary} />
-      {text && <Text style={styles.textInline}>{text}</Text>}
+      <ActivityIndicator size="small" color={Colors.primary[600]} />
+      {text && <Text style={styles.textSmall}>{text}</Text>}
     </View>
   );
 }
@@ -30,22 +30,22 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.light.background,
+    backgroundColor: Colors.white,
   },
   inline: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: Spacing.md,
+    padding: Spacing.lg,
   },
   text: {
     marginTop: Spacing.md,
-    fontSize: FontSize.md,
-    color: Colors.light.textSecondary,
+    fontSize: FontSize.body,
+    color: Colors.slate[500],
   },
-  textInline: {
+  textSmall: {
     marginLeft: Spacing.sm,
-    fontSize: FontSize.sm,
-    color: Colors.light.textSecondary,
+    fontSize: FontSize.body,
+    color: Colors.slate[500],
   },
 });

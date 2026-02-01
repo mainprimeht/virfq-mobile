@@ -1,142 +1,142 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   TextInput as RNTextInput,
   Text,
   StyleSheet,
   TextInputProps as RNTextInputProps,
-  TouchableOpacity,
+  ViewStyle,
+  StyleProp,
+  TextStyle,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors, Spacing, FontSize, BorderRadius } from '../constants';
+import { Colors, Spacing, FontSize, FontWeight, BorderRadius } from '../constants';
 
 interface TextInputProps extends RNTextInputProps {
   label?: string;
   error?: string;
-  leftIcon?: keyof typeof Ionicons.glyphMap;
-  rightIcon?: keyof typeof Ionicons.glyphMap;
-  onRightIconPress?: () => void;
+  hint?: string;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
+  containerStyle?: ViewStyle;
 }
 
 export function TextInput({
   label,
   error,
+  hint,
   leftIcon,
   rightIcon,
-  onRightIconPress,
-  secureTextEntry,
+  containerStyle,
   style,
+  editable = true,
   ...props
 }: TextInputProps) {
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const [isFocused, setIsFocused] = useState(false);
+  const [isFocused, setIsFocused] = React.useState(false);
 
-  const isPassword = secureTextEntry !== undefined;
-  const showPassword = isPassword && isPasswordVisible;
+  const inputStyles: StyleProp<TextStyle>[] = [styles.input];
+  if (leftIcon) inputStyles.push(styles.inputWithLeftIcon);
+  if (rightIcon) inputStyles.push(styles.inputWithRightIcon);
+  if (!editable) inputStyles.push(styles.inputDisabled);
+  if (style) inputStyles.push(style as TextStyle);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, containerStyle]}>
       {label && <Text style={styles.label}>{label}</Text>}
       
       <View
         style={[
           styles.inputContainer,
-          isFocused && styles.inputFocused,
-          error && styles.inputError,
+          isFocused && styles.inputContainerFocused,
+          error && styles.inputContainerError,
+          !editable && styles.inputContainerDisabled,
         ]}
       >
-        {leftIcon && (
-          <Ionicons
-            name={leftIcon}
-            size={20}
-            color={Colors.light.textSecondary}
-            style={styles.leftIcon}
-          />
-        )}
+        {leftIcon && <View style={styles.iconLeft}>{leftIcon}</View>}
         
         <RNTextInput
-          style={[styles.input, style]}
-          placeholderTextColor={Colors.light.textMuted}
-          secureTextEntry={isPassword && !showPassword}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
+          style={inputStyles}
+          placeholderTextColor={Colors.slate[400]}
+          onFocus={(e) => {
+            setIsFocused(true);
+            props.onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setIsFocused(false);
+            props.onBlur?.(e);
+          }}
+          editable={editable}
           {...props}
         />
         
-        {isPassword && (
-          <TouchableOpacity
-            onPress={() => setIsPasswordVisible(!isPasswordVisible)}
-            style={styles.rightIcon}
-          >
-            <Ionicons
-              name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-              size={20}
-              color={Colors.light.textSecondary}
-            />
-          </TouchableOpacity>
-        )}
-        
-        {!isPassword && rightIcon && (
-          <TouchableOpacity
-            onPress={onRightIconPress}
-            style={styles.rightIcon}
-            disabled={!onRightIconPress}
-          >
-            <Ionicons
-              name={rightIcon}
-              size={20}
-              color={Colors.light.textSecondary}
-            />
-          </TouchableOpacity>
-        )}
+        {rightIcon && <View style={styles.iconRight}>{rightIcon}</View>}
       </View>
       
       {error && <Text style={styles.error}>{error}</Text>}
+      {hint && !error && <Text style={styles.hint}>{hint}</Text>}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.lg,
   },
   label: {
-    fontSize: FontSize.sm,
-    fontWeight: '500',
-    color: Colors.light.text,
-    marginBottom: Spacing.xs,
+    fontSize: FontSize.body,
+    fontWeight: FontWeight.medium,
+    color: Colors.slate[700],
+    marginBottom: Spacing.sm,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.light.surface,
+    backgroundColor: Colors.white,
     borderWidth: 1,
-    borderColor: Colors.light.border,
+    borderColor: Colors.slate[200],
     borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.md,
+    minHeight: 48,
   },
-  inputFocused: {
-    borderColor: Colors.light.primary,
+  inputContainerFocused: {
+    borderWidth: 2,
+    borderColor: Colors.primary[600],
   },
-  inputError: {
-    borderColor: Colors.light.error,
+  inputContainerError: {
+    borderColor: Colors.error[600],
+    backgroundColor: Colors.error[50],
+  },
+  inputContainerDisabled: {
+    backgroundColor: Colors.slate[50],
   },
   input: {
     flex: 1,
+    fontSize: FontSize.body,
+    color: Colors.slate[900],
+    paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
-    fontSize: FontSize.md,
-    color: Colors.light.text,
   },
-  leftIcon: {
-    marginRight: Spacing.sm,
+  inputWithLeftIcon: {
+    paddingLeft: 0,
   },
-  rightIcon: {
-    marginLeft: Spacing.sm,
-    padding: Spacing.xs,
+  inputWithRightIcon: {
+    paddingRight: 0,
+  },
+  inputDisabled: {
+    color: Colors.slate[500],
+  },
+  iconLeft: {
+    paddingLeft: Spacing.lg,
+  },
+  iconRight: {
+    paddingRight: Spacing.lg,
   },
   error: {
-    fontSize: FontSize.xs,
-    color: Colors.light.error,
+    fontSize: FontSize.caption,
+    color: Colors.error[600],
+    marginTop: Spacing.xs,
+  },
+  hint: {
+    fontSize: FontSize.caption,
+    color: Colors.slate[500],
     marginTop: Spacing.xs,
   },
 });

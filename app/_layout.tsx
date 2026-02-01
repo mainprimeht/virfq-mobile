@@ -1,24 +1,19 @@
 import { Stack } from 'expo-router';
-import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { useAuthStore } from '../store';
+import { Colors } from '../constants';
 
 export default function RootLayout() {
-  const checkAuth = useAuthStore((state) => state.checkAuth);
-
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
   return (
     <>
       <StatusBar style="dark" />
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: '#f8fafc' },
+          contentStyle: { backgroundColor: Colors.slate[50] },
+          animation: 'slide_from_right',
         }}
       >
+        <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen 
@@ -27,6 +22,28 @@ export default function RootLayout() {
             headerShown: true,
             title: 'Chi tiết RFQ',
             headerBackTitle: 'Quay lại',
+            headerStyle: { backgroundColor: Colors.white },
+            headerTintColor: Colors.slate[800],
+          }} 
+        />
+        <Stack.Screen 
+          name="pricing" 
+          options={{ 
+            headerShown: true,
+            title: 'Bảng giá',
+            headerBackTitle: 'Quay lại',
+            headerStyle: { backgroundColor: Colors.white },
+            headerTintColor: Colors.slate[800],
+          }} 
+        />
+        <Stack.Screen 
+          name="checkout" 
+          options={{ 
+            headerShown: true,
+            title: 'Thanh toán',
+            headerBackTitle: 'Quay lại',
+            headerStyle: { backgroundColor: Colors.white },
+            headerTintColor: Colors.slate[800],
           }} 
         />
       </Stack>

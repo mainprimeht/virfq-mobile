@@ -4,115 +4,140 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  TouchableOpacity,
   Alert,
 } from 'react-native';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Button, TextInput } from '../../components';
 import { useAuthStore } from '../../store';
-import { useI18n } from '../../i18n';
-import { Colors, Spacing, FontSize, BorderRadius } from '../../constants';
+import { Colors, Spacing, FontSize, FontWeight, BorderRadius } from '../../constants';
 
 export default function LoginScreen() {
-  const { t } = useI18n();
-  const { login, isLoading } = useAuthStore();
-
+  const { login, isLoading, error } = useAuthStore();
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
   const validate = () => {
     const newErrors: { email?: string; password?: string } = {};
-
-    if (!email) {
-      newErrors.email = 'Email là bắt buộc';
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
+    
+    if (!email.trim()) {
+      newErrors.email = 'Vui lòng nhập email';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       newErrors.email = 'Email không hợp lệ';
     }
-
+    
     if (!password) {
-      newErrors.password = 'Mật khẩu là bắt buộc';
+      newErrors.password = 'Vui lòng nhập mật khẩu';
+    } else if (password.length < 6) {
+      newErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
     }
-
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleLogin = async () => {
     if (!validate()) return;
-
+    
     try {
-      await login(email, password);
+      await login(email.trim(), password);
       router.replace('/(tabs)');
-    } catch (error: any) {
-      Alert.alert('Lỗi', error.message || t.auth.invalidCredentials);
+    } catch (err: any) {
+      Alert.alert('Lỗi đăng nhập', err.message || 'Đăng nhập thất bại');
     }
   };
 
   return (
-    <KeyboardAvoidingView
+    <KeyboardAvoidingView 
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView
+      <ScrollView 
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        {/* Logo / Header */}
-        <View style={styles.header}>
+        {/* Logo */}
+        <View style={styles.logoContainer}>
           <Text style={styles.logo}>ViRFQ</Text>
-          <Text style={styles.subtitle}>
-            Kết nối nhà xuất khẩu Việt Nam với người mua quốc tế
-          </Text>
         </View>
+
+        {/* Title */}
+        <Text style={styles.title}>Đăng nhập vào ViRFQ</Text>
 
         {/* Form */}
         <View style={styles.form}>
           <TextInput
-            label={t.auth.email}
-            placeholder="email@example.com"
+            label="Email"
+            placeholder="Nhập email của bạn"
             value={email}
-            onChangeText={setEmail}
-            error={errors.email}
+            onChangeText={(text) => {
+              setEmail(text);
+              if (errors.email) setErrors({ ...errors, email: undefined });
+            }}
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
-            leftIcon="mail-outline"
+            error={errors.email}
+            leftIcon={<Ionicons name="mail-outline" size={20} color={Colors.slate[400]} />}
           />
 
           <TextInput
-            label={t.auth.password}
-            placeholder="••••••••"
+            label="Mật khẩu"
+            placeholder="Nhập mật khẩu"
             value={password}
-            onChangeText={setPassword}
-            error={errors.password}
-            secureTextEntry
+            onChangeText={(text) => {
+              setPassword(text);
+              if (errors.password) setErrors({ ...errors, password: undefined });
+            }}
+            secureTextEntry={!showPassword}
             autoComplete="password"
-            leftIcon="lock-closed-outline"
+            error={errors.password}
+            leftIcon={<Ionicons name="lock-closed-outline" size={20} color={Colors.slate[400]} />}
+            rightIcon={
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <Ionicons 
+                  name={showPassword ? 'eye-outline' : 'eye-off-outline'} 
+                  size={20} 
+                  color={Colors.slate[400]} 
+                />
+              </TouchableOpacity>
+            }
           />
 
-          <TouchableOpacity
-            style={styles.forgotPassword}
-            onPress={() => router.push('/(auth)/forgot-password')}
-          >
-            <Text style={styles.forgotPasswordText}>{t.auth.forgotPassword}</Text>
-          </TouchableOpacity>
-
           <Button
-            title={t.auth.login}
+            title="Đăng nhập"
             onPress={handleLogin}
             loading={isLoading}
             style={styles.loginButton}
           />
+
+          <TouchableOpacity 
+            style={styles.forgotButton}
+            onPress={() => router.push('/(auth)/forgot-password')}
+          >
+            <Text style={styles.forgotText}>Quên mật khẩu?</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Divider */}
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>hoặc</Text>
+          <View style={styles.dividerLine} />
         </View>
 
         {/* Register Link */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>{t.auth.noAccount}</Text>
+        <View style={styles.registerContainer}>
+          <Text style={styles.registerText}>Chưa có tài khoản?</Text>
           <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
-            <Text style={styles.registerLink}>{t.auth.registerNow}</Text>
+            <Text style={styles.registerLink}>Đăng ký ngay</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -123,62 +148,72 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
+    backgroundColor: Colors.white,
   },
   scrollContent: {
     flexGrow: 1,
-    padding: Spacing.lg,
-    justifyContent: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingTop: 60,
+    paddingBottom: Spacing['3xl'],
   },
-  header: {
+  logoContainer: {
     alignItems: 'center',
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing['3xl'],
   },
   logo: {
-    fontSize: 40,
-    fontWeight: '700',
-    color: Colors.light.primary,
+    fontSize: 48,
+    fontWeight: FontWeight.extraBold,
+    color: Colors.primary[600],
+    letterSpacing: -1,
   },
-  subtitle: {
-    fontSize: FontSize.md,
-    color: Colors.light.textSecondary,
+  title: {
+    fontSize: FontSize.h1,
+    fontWeight: FontWeight.bold,
+    color: Colors.slate[900],
     textAlign: 'center',
-    marginTop: Spacing.sm,
+    marginBottom: Spacing['3xl'],
   },
   form: {
-    backgroundColor: Colors.light.surface,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginBottom: Spacing.md,
-  },
-  forgotPasswordText: {
-    fontSize: FontSize.sm,
-    color: Colors.light.primary,
+    width: '100%',
   },
   loginButton: {
-    marginTop: Spacing.sm,
+    marginTop: Spacing.lg,
   },
-  footer: {
+  forgotButton: {
+    alignItems: 'center',
+    marginTop: Spacing.lg,
+  },
+  forgotText: {
+    fontSize: FontSize.body,
+    color: Colors.primary[600],
+    fontWeight: FontWeight.medium,
+  },
+  divider: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: Spacing.xl,
+    alignItems: 'center',
+    marginVertical: Spacing['2xl'],
   },
-  footerText: {
-    fontSize: FontSize.md,
-    color: Colors.light.textSecondary,
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.slate[200],
+  },
+  dividerText: {
+    paddingHorizontal: Spacing.lg,
+    fontSize: FontSize.body,
+    color: Colors.slate[400],
+  },
+  registerContainer: {
+    alignItems: 'center',
+  },
+  registerText: {
+    fontSize: FontSize.body,
+    color: Colors.slate[600],
   },
   registerLink: {
-    fontSize: FontSize.md,
-    color: Colors.light.primary,
-    fontWeight: '600',
-    marginLeft: Spacing.xs,
+    fontSize: FontSize.body,
+    color: Colors.primary[600],
+    fontWeight: FontWeight.semiBold,
+    marginTop: Spacing.xs,
   },
 });

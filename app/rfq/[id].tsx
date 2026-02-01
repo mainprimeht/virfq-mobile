@@ -4,32 +4,28 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Alert,
   TouchableOpacity,
+  Alert,
   Linking,
+  Share,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Button, Loading } from '../../components';
+import * as Clipboard from 'expo-clipboard';
+import { Button, Loading, QualityScoreBadge, StatusBadge, CategoryBadge } from '../../components';
 import { useRFQStore, useAuthStore } from '../../store';
-import { useI18n } from '../../i18n';
-import { Colors, Spacing, FontSize, BorderRadius } from '../../constants';
+import { api } from '../../services/api';
+import { Colors, Spacing, FontSize, FontWeight, BorderRadius, Shadows } from '../../constants';
+import type { RFQ, UnlockedContact } from '../../types';
 
 export default function RFQDetailScreen() {
-  const { t, locale } = useI18n();
-  const params = useLocalSearchParams<{ id: string }>();
-  const id = params.id || '';
-
+  const { id } = useLocalSearchParams<{ id: string }>();
   const { isAuthenticated } = useAuthStore();
-  const {
-    currentRFQ,
-    currentAccess,
-    isLoading,
-    fetchRFQDetail,
-    unlockRFQ,
-  } = useRFQStore();
-
+  const { currentRFQ, fetchRFQDetail, isLoading } = useRFQStore();
+  
+  const [unlockedContact, setUnlockedContact] = useState<UnlockedContact | null>(null);
   const [isUnlocking, setIsUnlocking] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -39,196 +35,286 @@ export default function RFQDetailScreen() {
 
   const handleUnlock = async () => {
     if (!isAuthenticated) {
-      router.push('/(auth)/login');
+      Alert.alert(
+        'Đăng nhập',
+        'Bạn cần đăng nhập để mở khóa thông tin liên hệ',
+        [
+          { text: 'Hủy', style: 'cancel' },
+          { text: 'Đăng nhập', onPress: () => router.push('/(auth)/login') },
+        ]
+      );
       return;
     }
 
-    setIsUnlocking(true);
     try {
-      await unlockRFQ(id);
-      Alert.alert('Thành công', 'Đã mở khóa thông tin liên hệ');
+      setIsUnlocking(true);
+      const response = await api.unlockRFQ(id!);
+      if (response.data) {
+        setUnlockedContact(response.data);
+      }
     } catch (error: any) {
-      Alert.alert('Lỗi', error.message || 'Không thể mở khóa');
+      Alert.alert('Lỗi', error.message || 'Không thể mở khóa RFQ');
     } finally {
       setIsUnlocking(false);
     }
   };
 
-  const handleContact = (type: 'email' | 'phone' | 'whatsapp', value: string) => {
-    switch (type) {
-      case 'email':
-        Linking.openURL(`mailto:${value}`);
-        break;
-      case 'phone':
-        Linking.openURL(`tel:${value}`);
-        break;
-      case 'whatsapp':
-        Linking.openURL(`https://wa.me/${value.replace(/[^0-9]/g, '')}`);
-        break;
+  const handleCopy = async (text: string, label: string) => {
+    await Clipboard.setStringAsync(text);
+    Alert.alert('Đã sao chép', `${label} đã được sao chép`);
+  };
+
+  const handleCall = (phone: string) => {
+    Linking.openURL(`tel:${phone}`);
+  };
+
+  const handleEmail = (email: string) => {
+    Linking.openURL(`mailto:${email}`);
+  };
+
+  const handleWhatsApp = (phone: string) => {
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    Linking.openURL(`whatsapp://send?phone=${cleanPhone}`);
+  };
+
+  const handleShare = async () => {
+    if (!currentRFQ) return;
+    try {
+      await Share.share({
+        title: currentRFQ.titleEn,
+        message: `${currentRFQ.titleEn}\n\nXem chi tiết tại ViRFQ: https://virfq.com/rfq/${currentRFQ.id}`,
+      });
+    } catch (error) {
+      console.error('Share error:', error);
     }
   };
 
-  if (isLoading || !currentRFQ) {
-    return <Loading fullScreen text={t.common.loading} />;
-  }
-
-  const rfq = currentRFQ;
-  const access = currentAccess;
-  const isUnlocked = access?.contactLevel !== 'none';
-
-  const title = locale === 'vi' && rfq.translationVi?.titleVi
-    ? rfq.translationVi.titleVi
-    : rfq.titleEn;
-
-  const description = locale === 'vi' && rfq.translationVi?.descriptionVi
-    ? rfq.translationVi.descriptionVi
-    : rfq.descriptionEn;
-
-  const category = locale === 'vi'
-    ? rfq.productCategory?.nameVi
-    : rfq.productCategory?.nameEn;
+  const handleSave = () => {
+    setIsSaved(!isSaved);
+    // TODO: Implement save to favorites API
+  };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString(locale === 'vi' ? 'vi-VN' : 'en-US', {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('vi-VN', {
       day: '2-digit',
-      month: 'long',
+      month: '2-digit',
       year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   };
 
+  if (isLoading || !currentRFQ) {
+    return <Loading />;
+  }
+
+  const rfq = currentRFQ;
+  const isNew = new Date().getTime() - new Date(rfq.createdAt).getTime() < 24 * 60 * 60 * 1000;
+  const isHot = rfq.qualityScore && rfq.qualityScore >= 80;
+
   return (
-    <ScrollView style={styles.container}>
-      {/* Header Card */}
-      <View style={styles.headerCard}>
-        {category && (
-          <View style={styles.categoryBadge}>
-            <Text style={styles.categoryText}>{category}</Text>
-          </View>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Header Actions */}
+      <View style={styles.actions}>
+        <TouchableOpacity style={styles.actionButton} onPress={handleSave}>
+          <Ionicons 
+            name={isSaved ? 'star' : 'star-outline'} 
+            size={24} 
+            color={isSaved ? Colors.warning[500] : Colors.slate[600]} 
+          />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
+          <Ionicons name="share-outline" size={24} color={Colors.slate[600]} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Badges */}
+      <View style={styles.badgesRow}>
+        {rfq.productCategory && (
+          <CategoryBadge name={rfq.productCategory.nameVi || rfq.productCategory.nameEn} />
         )}
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.date}>{formatDate(rfq.createdAt)}</Text>
+        {isHot && <StatusBadge type="hot" />}
+        {isNew && !isHot && <StatusBadge type="new" />}
+        {rfq.isFeatured && <StatusBadge type="verified" />}
       </View>
 
-      {/* Details */}
+      {/* Title */}
+      <Text style={styles.title}>{rfq.titleEn}</Text>
+      {rfq.translationVi?.titleVi && (
+        <Text style={styles.titleVi}>{rfq.translationVi.titleVi}</Text>
+      )}
+
+      {/* Quality Score Card */}
+      {rfq.qualityScore && (
+        <View style={styles.qualityCard}>
+          <View style={styles.qualityHeader}>
+            <Ionicons name="trophy" size={20} color={Colors.warning[500]} />
+            <Text style={styles.qualityTitle}>Quality Score</Text>
+          </View>
+          <View style={styles.qualityScoreRow}>
+            <Text style={styles.qualityScoreNumber}>{rfq.qualityScore}</Text>
+            <Text style={styles.qualityScoreMax}>/100</Text>
+          </View>
+          <View style={styles.qualityBar}>
+            <View 
+              style={[
+                styles.qualityBarFill, 
+                { width: `${rfq.qualityScore}%` }
+              ]} 
+            />
+          </View>
+        </View>
+      )}
+
+      {/* Details Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Thông tin yêu cầu</Text>
-        
-        <View style={styles.detailCard}>
-          <DetailRow
-            icon="cube-outline"
-            label={t.rfq.quantity}
-            value={`${rfq.quantity} ${rfq.quantityUnit}`}
-          />
-          <DetailRow
-            icon="location-outline"
-            label={t.rfq.buyerCountry}
-            value={rfq.buyerCountry}
-          />
-          <DetailRow
-            icon="boat-outline"
-            label={t.rfq.incoterms}
-            value={rfq.incoterms}
-          />
-          {rfq.targetPrice && (
-            <DetailRow
-              icon="pricetag-outline"
-              label={t.rfq.targetPrice}
-              value={`$${rfq.targetPrice}/MT`}
-            />
-          )}
-          {rfq.shippingPort && (
-            <DetailRow
-              icon="navigate-outline"
-              label={t.rfq.shippingPort}
-              value={rfq.shippingPort}
-            />
-          )}
+        <View style={styles.sectionHeader}>
+          <Ionicons name="list-outline" size={20} color={Colors.slate[600]} />
+          <Text style={styles.sectionTitle}>Thông tin yêu cầu</Text>
+        </View>
+        <View style={styles.detailsList}>
+          <View style={styles.detailItem}>
+            <Text style={styles.detailLabel}>Số lượng</Text>
+            <Text style={styles.detailValue}>{rfq.quantity} {rfq.quantityUnit}</Text>
+          </View>
+          <View style={styles.detailItem}>
+            <Text style={styles.detailLabel}>Quốc gia</Text>
+            <Text style={styles.detailValue}>{rfq.buyerCountry}</Text>
+          </View>
+          <View style={styles.detailItem}>
+            <Text style={styles.detailLabel}>Điều kiện giao hàng</Text>
+            <Text style={styles.detailValue}>{rfq.incoterms}</Text>
+          </View>
+          <View style={styles.detailItem}>
+            <Text style={styles.detailLabel}>Đăng lúc</Text>
+            <Text style={styles.detailValue}>{formatDate(rfq.createdAt)}</Text>
+          </View>
         </View>
       </View>
 
-      {/* Description */}
+      {/* Description Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Mô tả chi tiết</Text>
-        <View style={styles.descriptionCard}>
-          <Text style={styles.description}>{description}</Text>
+        <View style={styles.sectionHeader}>
+          <Ionicons name="document-text-outline" size={20} color={Colors.slate[600]} />
+          <Text style={styles.sectionTitle}>Mô tả chi tiết</Text>
         </View>
+        <Text style={styles.description}>{rfq.descriptionEn}</Text>
       </View>
 
-      {/* Contact Info */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t.rfq.contact}</Text>
-        
-        {isUnlocked ? (
-          <View style={styles.contactCard}>
-            {rfq.buyerEmail && (
-              <TouchableOpacity
-                style={styles.contactRow}
-                onPress={() => handleContact('email', rfq.buyerEmail!)}
-              >
-                <Ionicons name="mail" size={24} color={Colors.light.primary} />
-                <View style={styles.contactInfo}>
-                  <Text style={styles.contactLabel}>{t.rfq.buyerEmail}</Text>
-                  <Text style={styles.contactValue}>{rfq.buyerEmail}</Text>
-                </View>
-                <Ionicons name="open-outline" size={20} color={Colors.light.textMuted} />
-              </TouchableOpacity>
-            )}
+      {/* Vietnamese Translation */}
+      {rfq.translationVi?.descriptionVi && (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.flagEmoji}>🇻🇳</Text>
+            <Text style={styles.sectionTitle}>Tóm tắt tiếng Việt</Text>
+          </View>
+          <Text style={styles.description}>{rfq.translationVi.descriptionVi}</Text>
+        </View>
+      )}
 
-            {rfq.buyerPhone && access?.contactLevel !== 'email_only' && (
-              <TouchableOpacity
-                style={styles.contactRow}
-                onPress={() => handleContact('phone', rfq.buyerPhone!)}
-              >
-                <Ionicons name="call" size={24} color={Colors.light.secondary} />
-                <View style={styles.contactInfo}>
-                  <Text style={styles.contactLabel}>{t.rfq.buyerPhone}</Text>
-                  <Text style={styles.contactValue}>{rfq.buyerPhone}</Text>
-                </View>
-                <Ionicons name="open-outline" size={20} color={Colors.light.textMuted} />
-              </TouchableOpacity>
-            )}
+      {/* Contact Section */}
+      <View style={styles.contactSection}>
+        {unlockedContact ? (
+          // Unlocked State
+          <View style={styles.contactUnlocked}>
+            <View style={styles.contactHeader}>
+              <Ionicons name="checkmark-circle" size={24} color={Colors.success[600]} />
+              <Text style={styles.contactTitle}>Thông tin liên hệ</Text>
+            </View>
 
-            {rfq.buyerWhatsapp && access?.contactLevel === 'full' && (
-              <TouchableOpacity
-                style={styles.contactRow}
-                onPress={() => handleContact('whatsapp', rfq.buyerWhatsapp!)}
-              >
-                <Ionicons name="logo-whatsapp" size={24} color="#25D366" />
-                <View style={styles.contactInfo}>
-                  <Text style={styles.contactLabel}>{t.rfq.buyerWhatsapp}</Text>
-                  <Text style={styles.contactValue}>{rfq.buyerWhatsapp}</Text>
-                </View>
-                <Ionicons name="open-outline" size={20} color={Colors.light.textMuted} />
-              </TouchableOpacity>
-            )}
-
-            {rfq.buyerCompany && (
+            {unlockedContact.name && (
               <View style={styles.contactRow}>
-                <Ionicons name="business" size={24} color={Colors.light.textSecondary} />
-                <View style={styles.contactInfo}>
-                  <Text style={styles.contactLabel}>{t.rfq.buyerCompany}</Text>
-                  <Text style={styles.contactValue}>{rfq.buyerCompany}</Text>
+                <Ionicons name="person" size={18} color={Colors.slate[500]} />
+                <Text style={styles.contactValue}>{unlockedContact.name}</Text>
+              </View>
+            )}
+
+            {unlockedContact.company && (
+              <View style={styles.contactRow}>
+                <Ionicons name="business" size={18} color={Colors.slate[500]} />
+                <Text style={styles.contactValue}>{unlockedContact.company}</Text>
+              </View>
+            )}
+
+            {unlockedContact.email && (
+              <View style={styles.contactActionRow}>
+                <View style={styles.contactRow}>
+                  <Ionicons name="mail" size={18} color={Colors.slate[500]} />
+                  <Text style={styles.contactValue}>{unlockedContact.email}</Text>
                 </View>
+                <View style={styles.contactActions}>
+                  <TouchableOpacity 
+                    style={styles.actionChip}
+                    onPress={() => handleCopy(unlockedContact.email!, 'Email')}
+                  >
+                    <Text style={styles.actionChipText}>Copy</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.actionChip}
+                    onPress={() => handleEmail(unlockedContact.email!)}
+                  >
+                    <Text style={styles.actionChipText}>Gửi email</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            {unlockedContact.phone && (
+              <View style={styles.contactActionRow}>
+                <View style={styles.contactRow}>
+                  <Ionicons name="call" size={18} color={Colors.slate[500]} />
+                  <Text style={styles.contactValue}>{unlockedContact.phone}</Text>
+                </View>
+                <View style={styles.contactActions}>
+                  <TouchableOpacity 
+                    style={styles.actionChip}
+                    onPress={() => handleCopy(unlockedContact.phone!, 'Số điện thoại')}
+                  >
+                    <Text style={styles.actionChipText}>Copy</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.actionChip}
+                    onPress={() => handleCall(unlockedContact.phone!)}
+                  >
+                    <Text style={styles.actionChipText}>Gọi</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            {unlockedContact.whatsapp && (
+              <View style={styles.whatsappButton}>
+                <Button
+                  title="Nhắn tin WhatsApp"
+                  onPress={() => handleWhatsApp(unlockedContact.whatsapp!)}
+                  variant="secondary"
+                  icon={<Ionicons name="logo-whatsapp" size={20} color={Colors.success[600]} />}
+                />
               </View>
             )}
           </View>
         ) : (
-          <View style={styles.lockedCard}>
-            <Ionicons name="lock-closed" size={48} color={Colors.light.textMuted} />
-            <Text style={styles.lockedText}>
-              Mở khóa để xem thông tin liên hệ người mua
+          // Locked State
+          <View style={styles.contactLocked}>
+            <Ionicons name="lock-closed" size={32} color={Colors.slate[400]} />
+            <Text style={styles.contactLockedTitle}>Thông tin liên hệ</Text>
+            <Text style={styles.contactLockedText}>
+              Mở khóa để xem chi tiết buyer:
             </Text>
+            <View style={styles.contactLockedList}>
+              <Text style={styles.contactLockedItem}>• Email</Text>
+              <Text style={styles.contactLockedItem}>• Số điện thoại</Text>
+              <Text style={styles.contactLockedItem}>• WhatsApp</Text>
+            </View>
             <Button
-              title={t.rfq.unlock}
+              title="🔓 Mở khóa (3/5)"
               onPress={handleUnlock}
+              variant="cta"
               loading={isUnlocking}
               style={styles.unlockButton}
             />
-            {access?.quotaInfo && (
-              <Text style={styles.quotaText}>
-                Còn {access.quotaInfo.remaining} lượt mở khóa
-              </Text>
-            )}
+            <Text style={styles.remainingText}>Còn 2 lượt mở khóa hôm nay</Text>
           </View>
         )}
       </View>
@@ -238,150 +324,235 @@ export default function RFQDetailScreen() {
   );
 }
 
-function DetailRow({
-  icon,
-  label,
-  value,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  value: string;
-}) {
-  return (
-    <View style={styles.detailRow}>
-      <Ionicons name={icon} size={20} color={Colors.light.textSecondary} />
-      <Text style={styles.detailLabel}>{label}</Text>
-      <Text style={styles.detailValue}>{value}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
+    backgroundColor: Colors.white,
   },
-  headerCard: {
-    backgroundColor: Colors.light.surface,
-    padding: Spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
+  actions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
   },
-  categoryBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: Colors.light.primary + '15',
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.sm,
-    marginBottom: Spacing.sm,
+  actionButton: {
+    width: 44,
+    height: 44,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.slate[50],
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  categoryText: {
-    fontSize: FontSize.sm,
-    color: Colors.light.primary,
-    fontWeight: '500',
+  badgesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    marginTop: Spacing.lg,
   },
   title: {
-    fontSize: FontSize.xl,
-    fontWeight: '700',
-    color: Colors.light.text,
+    fontSize: FontSize.h2,
+    fontWeight: FontWeight.bold,
+    color: Colors.slate[900],
+    paddingHorizontal: Spacing.lg,
+    marginTop: Spacing.md,
     lineHeight: 28,
   },
-  date: {
-    fontSize: FontSize.sm,
-    color: Colors.light.textMuted,
+  titleVi: {
+    fontSize: FontSize.body,
+    color: Colors.slate[500],
+    paddingHorizontal: Spacing.lg,
+    marginTop: Spacing.xs,
+    fontStyle: 'italic',
+  },
+  qualityCard: {
+    marginHorizontal: Spacing.lg,
+    marginTop: Spacing.xl,
+    padding: Spacing.lg,
+    backgroundColor: Colors.warning[50],
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1,
+    borderColor: Colors.warning[100],
+  },
+  qualityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  qualityTitle: {
+    fontSize: FontSize.body,
+    fontWeight: FontWeight.semiBold,
+    color: Colors.slate[700],
+  },
+  qualityScoreRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
     marginTop: Spacing.sm,
   },
-  section: {
-    padding: Spacing.md,
+  qualityScoreNumber: {
+    fontSize: 36,
+    fontWeight: FontWeight.bold,
+    color: Colors.slate[900],
   },
-  sectionTitle: {
-    fontSize: FontSize.sm,
-    fontWeight: '600',
-    color: Colors.light.textSecondary,
-    textTransform: 'uppercase',
-    marginBottom: Spacing.sm,
+  qualityScoreMax: {
+    fontSize: FontSize.bodyLarge,
+    color: Colors.slate[500],
+    marginLeft: Spacing.xs,
   },
-  detailCard: {
-    backgroundColor: Colors.light.surface,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
-  },
-  detailLabel: {
-    flex: 1,
-    marginLeft: Spacing.md,
-    fontSize: FontSize.md,
-    color: Colors.light.textSecondary,
-  },
-  detailValue: {
-    fontSize: FontSize.md,
-    fontWeight: '500',
-    color: Colors.light.text,
-  },
-  descriptionCard: {
-    backgroundColor: Colors.light.surface,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-  },
-  description: {
-    fontSize: FontSize.md,
-    color: Colors.light.text,
-    lineHeight: 24,
-  },
-  contactCard: {
-    backgroundColor: Colors.light.surface,
-    borderRadius: BorderRadius.md,
+  qualityBar: {
+    height: 8,
+    backgroundColor: Colors.slate[200],
+    borderRadius: BorderRadius.full,
+    marginTop: Spacing.md,
     overflow: 'hidden',
   },
-  contactRow: {
+  qualityBarFill: {
+    height: '100%',
+    backgroundColor: Colors.success[600],
+    borderRadius: BorderRadius.full,
+  },
+  section: {
+    marginTop: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
+  },
+  sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: Spacing.md,
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  sectionTitle: {
+    fontSize: FontSize.bodyLarge,
+    fontWeight: FontWeight.semiBold,
+    color: Colors.slate[800],
+  },
+  flagEmoji: {
+    fontSize: 20,
+  },
+  detailsList: {
+    backgroundColor: Colors.slate[50],
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+  },
+  detailItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: Spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
+    borderBottomColor: Colors.slate[100],
   },
-  contactInfo: {
-    flex: 1,
-    marginLeft: Spacing.md,
+  detailLabel: {
+    fontSize: FontSize.body,
+    color: Colors.slate[500],
   },
-  contactLabel: {
-    fontSize: FontSize.xs,
-    color: Colors.light.textSecondary,
+  detailValue: {
+    fontSize: FontSize.body,
+    fontWeight: FontWeight.medium,
+    color: Colors.slate[800],
   },
-  contactValue: {
-    fontSize: FontSize.md,
-    fontWeight: '500',
-    color: Colors.light.text,
-    marginTop: 2,
+  description: {
+    fontSize: FontSize.body,
+    color: Colors.slate[700],
+    lineHeight: 22,
   },
-  lockedCard: {
-    backgroundColor: Colors.light.surface,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.xl,
+  contactSection: {
+    marginTop: Spacing.xl,
+    marginHorizontal: Spacing.lg,
+  },
+  contactLocked: {
+    backgroundColor: Colors.slate[50],
+    borderRadius: BorderRadius.xl,
+    padding: Spacing['2xl'],
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.slate[200],
   },
-  lockedText: {
-    fontSize: FontSize.md,
-    color: Colors.light.textSecondary,
-    textAlign: 'center',
+  contactLockedTitle: {
+    fontSize: FontSize.h3,
+    fontWeight: FontWeight.semiBold,
+    color: Colors.slate[800],
     marginTop: Spacing.md,
-    marginBottom: Spacing.lg,
+  },
+  contactLockedText: {
+    fontSize: FontSize.body,
+    color: Colors.slate[500],
+    marginTop: Spacing.sm,
+  },
+  contactLockedList: {
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.xl,
+  },
+  contactLockedItem: {
+    fontSize: FontSize.body,
+    color: Colors.slate[600],
+    marginVertical: 2,
   },
   unlockButton: {
     width: '100%',
   },
-  quotaText: {
-    fontSize: FontSize.sm,
-    color: Colors.light.textMuted,
+  remainingText: {
+    fontSize: FontSize.caption,
+    color: Colors.slate[500],
     marginTop: Spacing.md,
   },
+  contactUnlocked: {
+    backgroundColor: Colors.success[50],
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: Colors.success[100],
+  },
+  contactHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.lg,
+  },
+  contactTitle: {
+    fontSize: FontSize.h3,
+    fontWeight: FontWeight.semiBold,
+    color: Colors.success[700],
+  },
+  contactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    flex: 1,
+  },
+  contactValue: {
+    fontSize: FontSize.body,
+    color: Colors.slate[800],
+    fontWeight: FontWeight.medium,
+  },
+  contactActionRow: {
+    marginTop: Spacing.md,
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: Colors.success[100],
+  },
+  contactActions: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
+  },
+  actionChip: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: Colors.success[100],
+  },
+  actionChipText: {
+    fontSize: FontSize.caption,
+    fontWeight: FontWeight.medium,
+    color: Colors.success[700],
+  },
+  whatsappButton: {
+    marginTop: Spacing.lg,
+  },
   bottomPadding: {
-    height: Spacing.xxl,
+    height: Spacing['3xl'],
   },
 });

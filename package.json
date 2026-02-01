@@ -8,11 +8,14 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build:android": "eas build -p android --profile preview",
-    "build:ios": "eas build -p ios --profile preview"
+    "build:ios": "eas build -p ios --profile preview",
+    "lint": "eslint . --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
     "expo": "~54.0.33",
+    "expo-clipboard": "^8.0.0",
     "expo-constants": "^18.0.13",
     "expo-linking": "^8.0.11",
     "expo-router": "^6.0.23",

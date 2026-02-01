@@ -1,177 +1,200 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
-  Alert,
   TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Button, TextInput } from '../../components';
-import { useI18n } from '../../i18n';
-import { Colors, Spacing, FontSize, BorderRadius } from '../../constants';
-import * as api from '../../services/api';
+import { Ionicons } from '@expo/vector-icons';
+import { Button, OTPInput } from '../../components';
+import { useAuthStore } from '../../store';
+import { Colors, Spacing, FontSize, FontWeight } from '../../constants';
 
 export default function VerifyScreen() {
-  const { t } = useI18n();
-  const params = useLocalSearchParams<{ email: string }>();
-  const email = params.email || '';
-
+  const { email } = useLocalSearchParams<{ email: string }>();
+  const { verifyOTP, resendOTP, isLoading } = useAuthStore();
+  
   const [otp, setOtp] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isResending, setIsResending] = useState(false);
+  const [error, setError] = useState('');
+  const [countdown, setCountdown] = useState(60);
+  const [canResend, setCanResend] = useState(false);
+
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    } else {
+      setCanResend(true);
+    }
+  }, [countdown]);
 
   const handleVerify = async () => {
     if (otp.length !== 6) {
-      Alert.alert('Lỗi', 'Mã xác thực phải có 6 chữ số');
+      setError('Vui lòng nhập đủ 6 số');
       return;
     }
-
-    setIsLoading(true);
+    
     try {
-      await api.verifyOTP(email, otp);
-      Alert.alert('Thành công', 'Email đã được xác thực!', [
-        { text: 'OK', onPress: () => router.replace('/(tabs)') },
-      ]);
-    } catch (error: any) {
-      Alert.alert('Lỗi', error.message || 'Mã xác thực không đúng');
-    } finally {
-      setIsLoading(false);
+      await verifyOTP(email, otp);
+      Alert.alert(
+        'Xác thực thành công',
+        'Tài khoản của bạn đã được kích hoạt',
+        [{ text: 'OK', onPress: () => router.replace('/(tabs)') }]
+      );
+    } catch (err: any) {
+      setError(err.message || 'Mã OTP không chính xác');
     }
   };
 
   const handleResend = async () => {
-    setIsResending(true);
+    if (!canResend) return;
+    
     try {
-      await api.resendVerification(email);
-      Alert.alert('Đã gửi', 'Mã xác thực mới đã được gửi đến email của bạn');
-    } catch (error: any) {
-      Alert.alert('Lỗi', error.message || 'Không thể gửi lại mã');
-    } finally {
-      setIsResending(false);
+      await resendOTP(email);
+      setCountdown(60);
+      setCanResend(false);
+      setError('');
+      Alert.alert('Đã gửi', 'Mã OTP mới đã được gửi đến email của bạn');
+    } catch (err: any) {
+      Alert.alert('Lỗi', err.message || 'Không thể gửi lại mã OTP');
     }
   };
 
   return (
-    <ScrollView
+    <KeyboardAvoidingView 
       style={styles.container}
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={styles.header}>
+      <View style={styles.content}>
+        {/* Back Button */}
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Ionicons name="arrow-back" size={24} color={Colors.slate[700]} />
+        </TouchableOpacity>
+
+        {/* Icon */}
         <View style={styles.iconContainer}>
-          <Text style={styles.icon}>📧</Text>
+          <Ionicons name="mail-open-outline" size={64} color={Colors.primary[600]} />
         </View>
-        <Text style={styles.title}>{t.auth.verifyEmail}</Text>
-        <Text style={styles.subtitle}>{t.auth.otpSent}</Text>
-        <Text style={styles.email}>{email}</Text>
-      </View>
 
-      <View style={styles.form}>
-        <TextInput
-          label={t.auth.enterOTP}
-          placeholder="000000"
-          value={otp}
-          onChangeText={(text) => setOtp(text.replace(/[^0-9]/g, '').slice(0, 6))}
-          keyboardType="number-pad"
-          maxLength={6}
-          style={styles.otpInput}
-        />
+        {/* Title */}
+        <Text style={styles.title}>Xác thực email</Text>
+        <Text style={styles.subtitle}>
+          Nhập mã 6 số đã được gửi đến{'\n'}
+          <Text style={styles.emailText}>{email}</Text>
+        </Text>
 
+        {/* OTP Input */}
+        <View style={styles.otpContainer}>
+          <OTPInput
+            value={otp}
+            onChange={(value) => {
+              setOtp(value);
+              if (error) setError('');
+            }}
+            error={!!error}
+          />
+          {error && <Text style={styles.errorText}>{error}</Text>}
+        </View>
+
+        {/* Verify Button */}
         <Button
-          title="Xác thực"
+          title="Xác nhận"
           onPress={handleVerify}
           loading={isLoading}
           disabled={otp.length !== 6}
           style={styles.verifyButton}
         />
-      </View>
 
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>Không nhận được mã?</Text>
-        <TouchableOpacity onPress={handleResend} disabled={isResending}>
-          <Text style={[styles.resendLink, isResending && styles.resendDisabled]}>
-            {isResending ? 'Đang gửi...' : t.auth.resendOTP}
-          </Text>
-        </TouchableOpacity>
+        {/* Resend */}
+        <View style={styles.resendContainer}>
+          <Text style={styles.resendText}>Không nhận được mã?</Text>
+          {canResend ? (
+            <TouchableOpacity onPress={handleResend}>
+              <Text style={styles.resendLink}>Gửi lại</Text>
+            </TouchableOpacity>
+          ) : (
+            <Text style={styles.countdownText}>Gửi lại sau {countdown}s</Text>
+          )}
+        </View>
       </View>
-    </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
+    backgroundColor: Colors.white,
   },
   content: {
-    flexGrow: 1,
-    padding: Spacing.lg,
-    justifyContent: 'center',
+    flex: 1,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.xl,
   },
-  header: {
-    alignItems: 'center',
-    marginBottom: Spacing.xl,
+  backButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
   },
   iconContainer: {
-    marginBottom: Spacing.md,
-  },
-  icon: {
-    fontSize: 64,
+    alignItems: 'center',
+    marginTop: Spacing['2xl'],
+    marginBottom: Spacing.xl,
   },
   title: {
-    fontSize: FontSize.xxl,
-    fontWeight: '700',
-    color: Colors.light.text,
+    fontSize: FontSize.h1,
+    fontWeight: FontWeight.bold,
+    color: Colors.slate[900],
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: FontSize.md,
-    color: Colors.light.textSecondary,
+    fontSize: FontSize.body,
+    color: Colors.slate[500],
     textAlign: 'center',
-    marginTop: Spacing.sm,
+    marginTop: Spacing.md,
+    lineHeight: 22,
   },
-  email: {
-    fontSize: FontSize.md,
-    fontWeight: '600',
-    color: Colors.light.primary,
-    marginTop: Spacing.xs,
+  emailText: {
+    fontWeight: FontWeight.semiBold,
+    color: Colors.slate[700],
   },
-  form: {
-    backgroundColor: Colors.light.surface,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+  otpContainer: {
+    marginTop: Spacing['3xl'],
+    alignItems: 'center',
   },
-  otpInput: {
+  errorText: {
+    fontSize: FontSize.caption,
+    color: Colors.error[600],
+    marginTop: Spacing.md,
     textAlign: 'center',
-    fontSize: 24,
-    letterSpacing: 8,
-    fontWeight: '600',
   },
   verifyButton: {
-    marginTop: Spacing.md,
+    marginTop: Spacing['2xl'],
   },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+  resendContainer: {
+    alignItems: 'center',
     marginTop: Spacing.xl,
   },
-  footerText: {
-    fontSize: FontSize.md,
-    color: Colors.light.textSecondary,
+  resendText: {
+    fontSize: FontSize.body,
+    color: Colors.slate[500],
   },
   resendLink: {
-    fontSize: FontSize.md,
-    color: Colors.light.primary,
-    fontWeight: '600',
-    marginLeft: Spacing.xs,
+    fontSize: FontSize.body,
+    color: Colors.primary[600],
+    fontWeight: FontWeight.semiBold,
+    marginTop: Spacing.xs,
   },
-  resendDisabled: {
-    opacity: 0.5,
+  countdownText: {
+    fontSize: FontSize.body,
+    color: Colors.slate[400],
+    marginTop: Spacing.xs,
   },
 });

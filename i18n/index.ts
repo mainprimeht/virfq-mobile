@@ -1,23 +1,24 @@
-import { create } from 'zustand';
-import { vi, en, type Translations } from './translations';
+import { translations, Locale, TranslationKey } from './translations';
 
-type Locale = 'vi' | 'en';
+let currentLocale: Locale = 'vi';
 
-interface I18nState {
-  locale: Locale;
-  t: Translations;
-  setLocale: (locale: Locale) => void;
+export function setLocale(locale: Locale) {
+  currentLocale = locale;
 }
 
-const translations: Record<Locale, Translations> = { vi, en };
+export function getLocale(): Locale {
+  return currentLocale;
+}
 
-export const useI18n = create<I18nState>((set) => ({
-  locale: 'vi',
-  t: vi,
-  setLocale: (locale: Locale) => {
-    set({ locale, t: translations[locale] });
-  },
-}));
+export function t(key: TranslationKey, params?: Record<string, string | number>): string {
+  const translation = translations[currentLocale][key] || translations.vi[key] || key;
+  
+  if (!params) return translation;
+  
+  return Object.entries(params).reduce((result, [param, value]) => {
+    return result.replace(new RegExp(`\\{${param}\\}`, 'g'), String(value));
+  }, translation);
+}
 
-export { vi, en };
-export type { Translations };
+export { translations };
+export type { Locale, TranslationKey };

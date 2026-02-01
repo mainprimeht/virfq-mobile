@@ -1,172 +1,112 @@
 import { create } from 'zustand';
-import * as api from '../services/api';
-import type { RFQ, RFQDetail, RFQAccess, RFQFilters } from '../types';
+import { api } from '../services/api';
+import type { RFQ, RFQFilters } from '../types';
 
 interface RFQState {
   rfqs: RFQ[];
-  currentRFQ: RFQDetail | null;
-  currentAccess: RFQAccess | null;
-  filters: RFQFilters | null;
-  
-  // Pagination
-  page: number;
-  hasNextPage: boolean;
+  currentRFQ: RFQ | null;
   isLoading: boolean;
-  isLoadingMore: boolean;
-  
-  // Filter state
-  searchQuery: string;
-  selectedCategory: string;
-  selectedCountry: string;
-  selectedIncoterm: string;
+  error: string | null;
+  page: number;
+  hasMore: boolean;
+  filters: RFQFilters;
   
   // Actions
-  fetchRFQs: (refresh?: boolean) => Promise<void>;
+  fetchRFQs: (filters?: RFQFilters) => Promise<void>;
   loadMore: () => Promise<void>;
   fetchRFQDetail: (id: string) => Promise<void>;
-  unlockRFQ: (id: string) => Promise<any>;
-  fetchFilters: () => Promise<void>;
-  setSearch: (query: string) => void;
-  setCategory: (category: string) => void;
-  setCountry: (country: string) => void;
-  setIncoterm: (incoterm: string) => void;
+  setFilters: (filters: RFQFilters) => void;
   clearFilters: () => void;
+  clearError: () => void;
 }
+
+const DEFAULT_LIMIT = 20;
 
 export const useRFQStore = create<RFQState>((set, get) => ({
   rfqs: [],
   currentRFQ: null,
-  currentAccess: null,
-  filters: null,
-  page: 1,
-  hasNextPage: false,
   isLoading: false,
-  isLoadingMore: false,
-  searchQuery: '',
-  selectedCategory: '',
-  selectedCountry: '',
-  selectedIncoterm: '',
+  error: null,
+  page: 1,
+  hasMore: true,
+  filters: {},
 
-  fetchRFQs: async (refresh = false) => {
-    const state = get();
-    if (state.isLoading && !refresh) return;
-    
-    set({ isLoading: true, page: 1 });
-    
+  fetchRFQs: async (filters?: RFQFilters) => {
+    set({ isLoading: true, error: null });
     try {
-      const result = await api.getRFQList({
+      const currentFilters = filters || get().filters;
+      const response = await api.getRFQs({
+        ...currentFilters,
         page: 1,
-        limit: 12,
-        q: state.searchQuery || undefined,
-        category: state.selectedCategory || undefined,
-        country: state.selectedCountry || undefined,
-        incoterm: state.selectedIncoterm || undefined,
+        limit: DEFAULT_LIMIT,
       });
       
       set({
-        rfqs: result.rfqs,
+        rfqs: response.data,
         page: 1,
-        hasNextPage: result.pagination.hasNextPage,
+        hasMore: response.pagination.hasMore,
+        filters: currentFilters,
         isLoading: false,
       });
-    } catch (error) {
-      set({ isLoading: false });
-      throw error;
+    } catch (error: any) {
+      set({
+        error: error.message || 'Failed to fetch RFQs',
+        isLoading: false,
+      });
     }
   },
 
   loadMore: async () => {
-    const state = get();
-    if (state.isLoadingMore || !state.hasNextPage) return;
+    const { isLoading, hasMore, page, filters, rfqs } = get();
     
-    set({ isLoadingMore: true });
+    if (isLoading || !hasMore) return;
     
+    set({ isLoading: true, error: null });
     try {
-      const nextPage = state.page + 1;
-      const result = await api.getRFQList({
+      const nextPage = page + 1;
+      const response = await api.getRFQs({
+        ...filters,
         page: nextPage,
-        limit: 12,
-        q: state.searchQuery || undefined,
-        category: state.selectedCategory || undefined,
-        country: state.selectedCountry || undefined,
-        incoterm: state.selectedIncoterm || undefined,
+        limit: DEFAULT_LIMIT,
       });
       
       set({
-        rfqs: [...state.rfqs, ...result.rfqs],
+        rfqs: [...rfqs, ...response.data],
         page: nextPage,
-        hasNextPage: result.pagination.hasNextPage,
-        isLoadingMore: false,
+        hasMore: response.pagination.hasMore,
+        isLoading: false,
       });
-    } catch (error) {
-      set({ isLoadingMore: false });
-      throw error;
+    } catch (error: any) {
+      set({
+        error: error.message || 'Failed to load more RFQs',
+        isLoading: false,
+      });
     }
   },
 
   fetchRFQDetail: async (id: string) => {
-    set({ isLoading: true, currentRFQ: null, currentAccess: null });
-    
+    set({ isLoading: true, error: null, currentRFQ: null });
     try {
-      const result = await api.getRFQDetail(id);
+      const rfq = await api.getRFQDetail(id);
       set({
-        currentRFQ: result.rfq,
-        currentAccess: result.access,
+        currentRFQ: rfq,
         isLoading: false,
       });
-    } catch (error) {
-      set({ isLoading: false });
-      throw error;
-    }
-  },
-
-  unlockRFQ: async (id: string) => {
-    const result = await api.unlockRFQ(id);
-    
-    // Refresh the current RFQ to get updated contact info
-    const state = get();
-    if (state.currentRFQ?.id === id) {
-      const refreshed = await api.getRFQDetail(id);
+    } catch (error: any) {
       set({
-        currentRFQ: refreshed.rfq,
-        currentAccess: refreshed.access,
+        error: error.message || 'Failed to fetch RFQ detail',
+        isLoading: false,
       });
     }
-    
-    return result;
   },
 
-  fetchFilters: async () => {
-    try {
-      const filters = await api.getRFQFilters();
-      set({ filters });
-    } catch (error) {
-      console.error('Failed to fetch filters:', error);
-    }
-  },
-
-  setSearch: (query: string) => {
-    set({ searchQuery: query });
-  },
-
-  setCategory: (category: string) => {
-    set({ selectedCategory: category });
-  },
-
-  setCountry: (country: string) => {
-    set({ selectedCountry: country });
-  },
-
-  setIncoterm: (incoterm: string) => {
-    set({ selectedIncoterm: incoterm });
+  setFilters: (filters: RFQFilters) => {
+    set({ filters });
   },
 
   clearFilters: () => {
-    set({
-      searchQuery: '',
-      selectedCategory: '',
-      selectedCountry: '',
-      selectedIncoterm: '',
-    });
+    set({ filters: {} });
   },
+
+  clearError: () => set({ error: null }),
 }));
